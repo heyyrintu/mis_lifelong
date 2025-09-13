@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel MIS Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo-container">
+                    <img src="https://media.licdn.com/dms/image/v2/D560BAQGb0alHDJIMkg/company-logo_200_200/company-logo_200_200/0/1712907659264/drona_logitech_pvt_ltd_logo?e=2147483647&v=beta&t=01P2rlTJNWijcdi8fc26EiLIqMgBI1iCB8xHm8eKBtM" 
+                         alt="Drona Logitech Pvt Ltd" 
+                         class="company-logo">
+                </div>
+                <div class="header-text">
+                    <h1>DRONA MIS DASHBOARD</h1>
+                    <p>Upload your order tracking file and generate formatted reports</p>
+                    <div id="accessLevelIndicator" style="margin-top: 10px; font-size: 14px; opacity: 0.8;"></div>
+                </div>
+            </div>
+        </header>
+        
+        <div id="errorMessage" class="error-message" style="display: none;">
+            <span id="errorText"></span>
+        </div>
+        
+        <div class="upload-section">
+            <h2>Upload File</h2>
+            
+            <div id="uploadArea" class="upload-area">
+                <div class="upload-content">
+                    <span class="upload-icon">📁</span>
+                    <h3>Drag & Drop your Excel file here</h3>
+                    <p>or <span class="browse-text">click to browse</span></p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                </div>
+            </div>
+            
+            <div id="fileInfo" class="file-info" style="display: none;">
+                <p><strong>Filename:</strong> <span id="fileName"></span></p>
+                <p><strong>Size:</strong> <span id="fileSize"></span></p>
+                <p><strong>Records:</strong> <span id="recordCount"></span></p>
+                
+                <!-- Load Data Button -->
+                <div class="load-section">
+                    <button id="loadDataBtn" class="btn-load">Load Data</button>
+                    <span id="loadStatus" class="load-status"></span>
+                </div>
+            </div>
+            
+            <div id="generationSection" class="generation-actions" style="display: none;">
+                <div class="sort-controls">
+                    <div class="sort-group warehouse-sort-group">
+                        <label for="locationFilter">Location:</label>
+                        <select id="locationFilter" class="filter-dropdown">
+                            <option value="all">All Locations</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="sort-group warehouse-sort-group">
+                        <label for="areaCodeFilter">Area Code:</label>
+                        <select id="areaCodeFilter" class="filter-dropdown">
+                            <option value="all">All Area Codes</option>
+                            <!-- Options will be populated dynamically based on location -->
+                        </select>
+                    </div>
+                    <div class="sort-group warehouse-sort-group">
+                        <label for="warehouseFilter">Warehouse:</label>
+                        <select id="warehouseFilter" class="filter-dropdown">
+                            <option value="all">All Warehouses</option>
+                            <!-- Options will be populated dynamically based on area code -->
+                        </select>
+                    </div>
+                    <div class="sort-group">
+                        <label for="sortOrder">Sort by Date:</label>
+                        <select id="sortOrder">
+                            <option value="newest">Newest First</option>
+                            <option value="oldest">Oldest First</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="generateReports" class="btn-primary">Generate Reports</button>
+            </div>
+        </div>
+        
+        <!-- Dashboard Section -->
+        <div class="dashboard-section">
+            <h2>Dashboard</h2>
+            <div id="dashboardSection"></div>
+        </div>
+
+        <!-- Order View Dashboard -->
+        <div class="dashboard-section order-view-section">
+            <h2>📦 Order View</h2>
+            <div id="orderViewSection"></div>
+        </div>
+
+        <!-- LR Missing Dashboard -->
+        <div id="lrMissingSection" class="lr-dashboard" style="display: none;">
+            
+            <!-- Header Section -->
+            <div class="dashboard-title">
+                <h2>🚛 LR Missing Dashboard</h2>
+                <p>Track and manage shipments missing LR numbers</p>
+                <div class="header-buttons">
+                    <button class="dash-btn secondary" id="refreshLRMissing" onclick="refreshLRMissing()">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+
+
+
+            <!-- Date Selection Section -->
+            <div class="date-selection-section">
+                <div class="control-section">
+                    <div class="control-title">📅 Select Date</div>
+                    <div class="single-date-control">
+                        <div class="date-input-group">
+                            <label for="lrDatePicker">Select Date:</label>
+                            <input type="date" id="lrDatePicker" class="aesthetic-date-input">
+                        </div>
+                        <button class="generate-btn" id="generateLRReport" onclick="generateLRMissingReport()">
+                            <span class="btn-icon">⚡</span>
+                            <span class="btn-text">Generate Report</span>
+                            <div class="btn-glow"></div>
+                        </button>
+                    </div>
+                    <div class="selected-info" id="selectedDateInfo" style="display: none;">
+                        <span id="selectedDateText"></span>
+                        <span class="info-badge" id="selectedDateCount">0 records</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LR Missing Summary Section (Only shows after date selection) -->
+            <div id="lrMissingSummarySection" class="lr-summary-section" style="display: none;">
+                <!-- Statistics Cards -->
+                <div class="dashboard-stats">
+                    <div class="stat-box total">
+                        <div class="stat-number" id="totalLRMissingCount">0</div>
+                        <div class="stat-text">
+                            <h4>Total Missing</h4>
+                            <span>All categories</span>
+                        </div>
+                        <div class="stat-icon">📊</div>
+                    </div>
+                    
+                    <div class="stat-box b2c">
+                        <div class="stat-number" id="b2cLRMissingCount">0</div>
+                        <div class="stat-text">
+                            <h4>B2C</h4>
+                            <span>Decathlon, Shopify</span>
+                        </div>
+                        <div class="stat-icon">🛍️</div>
+                    </div>
+                    
+                    <div class="stat-box ecommerce">
+                        <div class="stat-number" id="ecomLRMissingCount">0</div>
+                        <div class="stat-text">
+                            <h4>E-commerce</h4>
+                            <span>Amazon, Flipkart</span>
+                        </div>
+                        <div class="stat-icon">🛒</div>
+                    </div>
+                    
+                    <div class="stat-box offline">
+                        <div class="stat-number" id="offlineLRMissingCount">0</div>
+                        <div class="stat-text">
+                            <h4>Offline</h4>
+                            <span>B2B, GT, MT</span>
+                        </div>
+                        <div class="stat-icon">🏪</div>
+                    </div>
+                    
+                    <div class="stat-box quickcommerce">
+                        <div class="stat-number" id="quickcomLRMissingCount">0</div>
+                        <div class="stat-text">
+                            <h4>Quick Commerce</h4>
+                            <span>Blinkit, Zepto</span>
+                        </div>
+                        <div class="stat-icon">⚡</div>
+                    </div>
+                    
+                    <div class="stat-box ebo">
+                        <div class="stat-number" id="eboLRMissingCount">0</div>
+                        <div class="stat-text">
+                            <h4>EBO</h4>
+                            <span>Store Lucknow, Zirakpur</span>
+                        </div>
+                        <div class="stat-icon">🏢</div>
+                    </div>
+                    
+                    <div class="stat-box others">
+                        <div class="stat-number" id="othersLRMissingCount">0</div>
+                        <div class="stat-text">
+                            <h4>Others</h4>
+                            <span>Vendor, Internal</span>
+                        </div>
+                        <div class="stat-icon">📋</div>
+                    </div>
+                </div>
+
+                <!-- Category Filter Section -->
+                <div class="category-filter-section">
+                    <div class="control-section">
+                        <div class="control-title">🔍 Filter by Category</div>
+                        <div class="category-filter">
+                            <select id="lrCategoryFilter" onchange="filterByCategory()">
+                                <option value="all">All Categories (<span id="totalFilterCount">0</span>)</option>
+                                <option value="b2c">B2C (<span id="b2cFilterCount">0</span>)</option>
+                                <option value="ecom">E-commerce (<span id="ecomFilterCount">0</span>)</option>
+                                <option value="offline">Offline (<span id="offlineFilterCount">0</span>)</option>
+                                <option value="quickcom">Quick-commerce (<span id="quickcomFilterCount">0</span>)</option>
+                                <option value="ebo">EBO (<span id="eboFilterCount">0</span>)</option>
+                                <option value="others">Others (<span id="othersFilterCount">0</span>)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table Section (Only shows after date selection) -->
+            <div id="lrMissingTableSection" class="dashboard-table" style="display: none;">
+                <div class="table-title">
+                    <h3>📋 LR Missing Records</h3>
+                    <span id="recordCount"></span>
+                </div>
+                <div class="table-wrapper">
+                    <div id="lrMissingByDay">
+                        <!-- LR Missing records will be displayed here -->
+                    </div>
+                </div>
+                <!-- Download Section -->
+                <div class="download-section">
+                    <button class="btn-download-lr" id="downloadLRMissing" onclick="downloadLRMissingExcel()">
+                        📥 Download LR Missing Report
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <h2>Generated Reports</h2>
+            
+            <!-- B2C Report -->
+            <div class="report-container">
+                <div class="report-header">
+                    <h3>B2C Report</h3>
+                    <div class="report-actions">
+                        <span id="b2cCount" class="record-count">0 records</span>
+                        <button class="btn-download" onclick="downloadReport('b2c')">Download</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="b2cTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- E-Commerce Report -->
+            <div class="report-container">
+                <div class="report-header">
+                    <h3>E-Commerce Report</h3>
+                    <div class="report-actions">
+                        <span id="ecomCount" class="record-count">0 records</span>
+                        <button class="btn-download" onclick="downloadReport('ecom')">Download</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="ecomTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Offline Report -->
+            <div class="report-container">
+                <div class="report-header">
+                    <h3>Offline Report</h3>
+                    <div class="report-actions">
+                        <span id="offlineCount" class="record-count">0 records</span>
+                        <button class="btn-download" onclick="downloadReport('offline')">Download</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="offlineTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Quick-Commerce Report -->
+            <div class="report-container">
+                <div class="report-header">
+                    <h3>Quick-Commerce Report</h3>
+                    <div class="report-actions">
+                        <span id="quickcomCount" class="record-count">0 records</span>
+                        <button class="btn-download" onclick="downloadReport('quickcom')">Download</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="quickcomTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- EBO Report -->
+            <div class="report-container">
+                <div class="report-header">
+                    <h3>EBO Report</h3>
+                    <div class="report-actions">
+                        <span id="eboCount" class="record-count">0 records</span>
+                        <button class="btn-download" onclick="downloadReport('ebo')">Download</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="eboTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Others Report -->
+            <div class="report-container">
+                <div class="report-header">
+                    <h3>Others Report</h3>
+                    <div class="report-actions">
+                        <span id="othersCount" class="record-count">0 records</span>
+                        <button class="btn-download" onclick="downloadReport('others')">Download</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="othersTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="download-all">
+                <button id="downloadAll" class="btn-primary">Download All Reports</button>
+            </div>
+        </div>
+    </div>
+    
+    
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

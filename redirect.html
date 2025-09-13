@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <script>
+        // Check if user is authenticated
+        const token = localStorage.getItem('authToken');
+        const user = localStorage.getItem('currentUser');
+        const loginTime = localStorage.getItem('loginTime');
+        
+        if (token && user && loginTime) {
+            const timeSinceLogin = Date.now() - parseInt(loginTime);
+            const sessionTimeout = 30 * 60 * 1000; // 30 minutes
+            
+            if (timeSinceLogin < sessionTimeout) {
+                // User is authenticated, redirect to main app
+                window.location.href = 'index.html';
+            } else {
+                // Session expired, redirect to login
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        } else {
+            // Not authenticated, redirect to login
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+<body>
+    <div style="text-align: center; margin-top: 50px; font-family: Arial, sans-serif;">
+        <h2>Redirecting...</h2>
+        <p>Please wait while we check your authentication status.</p>
+    </div>
+</body>
+</html>
