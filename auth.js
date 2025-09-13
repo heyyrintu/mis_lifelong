@@ -111,13 +111,13 @@ class AuthenticationSystem {
     validateCredentials(username, password) {
         // Production credentials with access levels
         const validUsers = {
-            'drona_admin': {
-                password: 'drona@12345',
+            'admin': {
+                password: 'admin123',
                 accessLevel: 'admin', // Read/Write access
                 permissions: ['read', 'write', 'download', 'upload', 'delete']
             },
-            'drona_user': {
-                password: 'drona_user12345',
+            'user': {
+                password: 'user12345',
                 accessLevel: 'user', // Read-only access
                 permissions: ['read']
             }
